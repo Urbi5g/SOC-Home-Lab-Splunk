@@ -1,0 +1,30 @@
+# Detection Name:
+Network Reconnaissance - Multiple Port Scan Detection
+
+
+# Description:
+Detects potential port scanning activity by identifying
+a source IP contacting multiple destination ports within
+a short time window.
+
+
+# SPL Query:
+
+'''SPL
+index=main
+sourcetype="WinEventLog:Security"
+(EventCode=5152 OR EventCode=5156 OR EventCode=5157)
+| bin _time span=1m
+| stats dc(Destination_Port) as unique_ports
+count
+values(Destination_Port) as targeted_ports
+by Source_Address _time
+| where unique_ports >= 5
+
+                                '''
+# Investigation Fields:
+
+Source_Address
+Destination_Port
+EventCode
+_time
