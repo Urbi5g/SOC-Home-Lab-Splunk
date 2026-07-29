@@ -20,13 +20,13 @@ This lab demonstrates the complete detection lifecycle by combining attack simul
 
 ### Network Reconnaissance Detection Dashboard
 
-![Network Reconnaissance Detection Dashboard](./01-Network-Reconnaissance-Nmap/screenshots/Dashboards1 Network Reconnaissance Detection .png)
+![Network Reconnaissance Detection Dashboard](./01-Network-Reconnaissance-Nmap/screenshots/detection_dashboard.png)
 
 ---
 
 ### Recon Investigation Dashboard
 
-![Recon Investigation Dashboard](./01-Network-Reconnaissance-Nmap/screenshots/Dashboards3 Recon Investigation.png)
+![Recon Investigation Dashboard](./01-Network-Reconnaissance-Nmap/screenshots/investigation_dashboard.png)
 
 ---
 

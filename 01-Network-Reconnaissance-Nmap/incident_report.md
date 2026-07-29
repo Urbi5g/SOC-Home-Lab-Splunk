@@ -44,7 +44,7 @@ Windows Security Event Logs were collected into Splunk and analyzed using SPL de
 
 Attacker
 Kali Linux
-192.168.81.104
+192.168.213.53
 
     |
     |
@@ -52,7 +52,7 @@ Kali Linux
 
 Target
 Windows Endpoint
-192.168.81.138
+192.168.213.138
 
 
 
