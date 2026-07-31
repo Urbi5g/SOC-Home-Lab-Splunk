@@ -1,214 +1,118 @@
-# Incident Report: Web Login Brute Force Attack
+# Incident Report – Web Login Brute Force Attack
 
-## 1. Incident Overview
+## Executive Summary
 
-A web login brute force attack was simulated against the DVWA vulnerable web application using Hydra.
-
-The attack generated multiple HTTP POST requests against the login endpoint in an attempt to discover valid credentials through repeated username and password combinations.
-
-Splunk SIEM successfully detected the suspicious authentication pattern, generated a High Severity alert, and provided investigation capabilities through dedicated dashboards.
+A simulated web login brute force attack was conducted against the DVWA login portal using Hydra. Splunk Enterprise successfully detected the malicious activity by identifying multiple HTTP POST authentication attempts from the same source IP within a short time window. A scheduled alert was triggered, an email notification was delivered, and the incident was investigated using custom Splunk dashboards.
 
 ---
 
-# 2. Incident Details
+# Incident Details
 
-| Field                  | Details                         |
-| ---------------------- | ------------------------------- |
-| Incident Name          | Web Login Brute Force Attack    |
-| Detection Name         | Web Login Brute Force Detection |
-| Severity               | High                            |
-| Attack Type            | Credential Attack               |
-| Target Application     | DVWA Login Portal               |
-| Attack Tool            | Hydra                           |
-| Log Source             | Apache Access Logs              |
-| MITRE ATT&CK Technique | T1110 - Brute Force             |
-
----
-
-# 3. Attack Description
-
-The attacker performed automated login attempts against the DVWA authentication endpoint:
-
-```
-/dvwa/login.php
-```
-
-The attack was identified by observing:
-
-* Multiple POST requests within a short time period.
-* Repeated login attempts from the same source IP.
-* Automated User-Agent behavior.
-* Abnormal authentication request frequency.
-
-The activity matches the behavior of a brute force credential attack.
+| Field          | Value                           |
+| -------------- | ------------------------------- |
+| Incident Name  | Web Login Brute Force Attack    |
+| Severity       | High                            |
+| Status         | Closed                          |
+| Detection Name | Web Login Brute Force Detection |
+| Attack Tool    | Hydra                           |
+| Target         | DVWA Login Portal               |
+| Log Source     | Apache Access Logs              |
+| MITRE ATT&CK   | T1110 – Brute Force             |
 
 ---
 
-# 4. Attack Execution
+# Detection Summary
 
-The attack was simulated using Hydra.
+The detection rule monitored HTTP POST requests targeting the DVWA authentication page and grouped events by source IP within a 30-second window. An alert was generated when the number of login attempts exceeded the configured threshold.
 
-Attack characteristics:
+Detection Indicators:
 
-* Tool: Hydra
-* Target: DVWA Web Login Page
-* Protocol: HTTP POST
-* Attack Method: Username and Password Enumeration
-
-The attack execution details are documented in:
-
-```
-attack/hydra_commands.txt
-```
+* Multiple HTTP POST requests.
+* Repeated authentication attempts.
+* Single source IP.
+* Automated login behavior.
 
 ---
 
-# 5. Detection Logic
+# Investigation Summary
 
-The detection rule was created in Splunk to identify repeated login attempts.
+The investigation was performed using a dedicated Splunk Investigation Dashboard.
 
-Detection methodology:
+The analyst reviewed:
 
-1. Monitor HTTP POST requests.
-2. Filter requests targeting:
+* Source IP activity
+* Login attempt timeline
+* Raw Apache Access Logs
+* User-Agent information
+* HTTP Status Codes
+* Detection summary
 
-```
-/dvwa/login.php
-```
-
-3. Group events by source IP.
-4. Count authentication attempts within a 30-second window.
-5. Trigger an alert when the threshold is exceeded.
-
-Detection Query:
-
-```spl
-index=main sourcetype=access_combined method=POST uri="/dvwa/login.php"
-| bin _time span=30s
-| stats count as attempts values(useragent) as useragent earliest(_time) as first_attempt latest(_time) as last_attempt by clientip
-| where attempts >= 5
-```
+The collected evidence confirmed the activity as a brute force attack simulation.
 
 ---
 
-# 6. Alert Information
+# Timeline
 
-Splunk generated the following alert:
-
-| Field              | Value                           |
-| ------------------ | ------------------------------- |
-| Alert Name         | Web Login Brute Force Detection |
-| Severity           | High                            |
-| Trigger Type       | Scheduled Alert                 |
-| Action             | Email Notification              |
-| Detection Category | Web Application Attack          |
-
-The alert notification was successfully delivered to the SOC analyst email.
+| Phase            | Description                                                    |
+| ---------------- | -------------------------------------------------------------- |
+| Attack Execution | Hydra initiated repeated login attempts against DVWA.          |
+| Log Collection   | Apache Access Logs recorded all authentication requests.       |
+| Detection        | Splunk identified excessive login attempts.                    |
+| Alerting         | A scheduled alert was triggered.                               |
+| Notification     | Email notification was successfully delivered.                 |
+| Investigation    | The incident was analyzed through the Investigation Dashboard. |
+| Documentation    | Findings were documented for future reference.                 |
 
 ---
 
-# 7. Investigation Process
+# Evidence Collected
 
-After receiving the alert, the analyst performed investigation using the Splunk Investigation Dashboard.
+The following evidence was collected during the investigation:
 
-The investigation workflow:
-
-```
-Alert Triggered
-       |
-       |
-       v
-Detection Dashboard
-       |
-       |
-       v
-Analyze Source IP
-       |
-       |
-       v
-Investigation Dashboard
-       |
-       |
-       v
-Review Events and Indicators
-```
+* Hydra execution output
+* Detection SPL search results
+* Triggered Splunk alert
+* Email notification
+* Detection Dashboard
+* Drilldown investigation workflow
+* Investigation Dashboard
+* Raw Apache Access Log events
 
 ---
 
-# 8. Investigation Findings
+# MITRE ATT&CK Mapping
 
-The investigation identified the following indicators:
-
-## Source IP Analysis
-
-The source IP generated a high number of login attempts against the DVWA login page.
-
-## Timeline Analysis
-
-The activity occurred within a short time window, indicating automated attack behavior.
-
-## User-Agent Analysis
-
-The User-Agent information helped identify automated attack tooling.
-
-## HTTP Request Analysis
-
-The investigation confirmed repeated POST requests to:
-
-```
-/dvwa/login.php
-```
+| Technique ID | Technique   |
+| ------------ | ----------- |
+| T1110        | Brute Force |
 
 ---
 
-# 9. Indicators of Compromise (IOCs)
+# Impact Assessment
 
-| Indicator      | Description                      |
-| -------------- | -------------------------------- |
-| Source IP      | Attacking client address         |
-| URI            | /dvwa/login.php                  |
-| HTTP Method    | POST                             |
-| User-Agent     | Automated client                 |
-| Attack Pattern | Multiple authentication attempts |
+This activity was executed within a controlled SOC Home Lab environment. No production systems or real user accounts were affected.
 
----
+In a production environment, this attack could result in:
 
-# 10. Impact Assessment
-
-Since this was a controlled laboratory simulation against DVWA, no real user accounts or production systems were affected.
-
-In a real environment, a successful brute force attack could lead to:
-
-* Unauthorized account access.
-* Credential compromise.
-* Data exposure.
-* Further system compromise.
+* Credential compromise
+* Unauthorized account access
+* Privilege escalation
+* Lateral movement
+* Data exposure
 
 ---
 
-# 11. Recommended Response Actions
+# Recommendations
 
-SOC analyst recommendations:
-
-1. Block or investigate the source IP.
-2. Review successful authentication attempts.
-3. Reset compromised credentials if required.
-4. Enable Multi-Factor Authentication (MFA).
-5. Apply login rate limiting.
-6. Implement account lockout policies.
-7. Continue monitoring for related activity.
+* Enable Multi-Factor Authentication (MFA).
+* Implement account lockout policies.
+* Apply login rate limiting.
+* Monitor authentication logs continuously.
+* Block confirmed malicious source IP addresses.
+* Review successful login events following brute force activity.
 
 ---
 
-# 12. Lessons Learned
+# Conclusion
 
-This exercise demonstrated the complete SOC workflow:
-
-* Simulating an attack.
-* Collecting security logs.
-* Engineering a Splunk detection rule.
-* Creating automated alerts.
-* Performing investigation.
-* Documenting incident response procedures.
-
-The scenario improved practical skills in Splunk SIEM monitoring, detection engineering, and SOC Level 1 investigation.
+This laboratory exercise demonstrated the complete SOC workflow for detecting and investigating a web login brute force attack using Splunk Enterprise. The project covered attack simulation, detection engineering, alert generation, email notification, dashboard development, incident investigation, and security documentation, providing practical experience aligned with SOC Analyst Level 1 responsibilities.
