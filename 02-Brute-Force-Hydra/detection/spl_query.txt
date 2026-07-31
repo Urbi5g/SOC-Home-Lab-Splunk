@@ -1,0 +1,93 @@
+# Splunk Detection Query - Web Login Brute Force
+
+## Detection Name
+
+```text
+Web Login Brute Force Detection
+```
+
+## Description
+
+Detects multiple HTTP POST login attempts against the DVWA login page from the same source IP within a short time window.
+
+## SPL Query
+
+```spl
+index=main sourcetype=access_combined method=POST uri="/dvwa/login.php"
+| bin _time span=30s
+| stats count as attempts values(useragent) as useragent earliest(_time) as first_attempt latest(_time) as last_attempt by clientip
+| where attempts >= 5
+| eval first_attempt=strftime(first_attempt,"%Y-%m-%d %H:%M:%S")
+| eval last_attempt=strftime(last_attempt,"%Y-%m-%d %H:%M:%S")
+| eval Severity="High"
+| eval Technique="MITRE ATT&CK T1110 - Brute Force"
+| eval Detection="DVWA Web Login Brute Force"
+| sort -attempts
+```
+
+---
+
+# Detection Logic Explanation
+
+The query performs the following actions:
+
+1. Filters web access logs related to the DVWA login endpoint.
+
+```text
+/dvwa/login.php
+```
+
+2. Monitors HTTP POST requests generated during authentication attempts.
+
+3. Groups events by source IP within a 30-second time window.
+
+4. Counts the number of login attempts.
+
+5. Triggers detection when:
+
+```text
+attempts >= 5
+```
+
+6. Adds investigation metadata:
+
+* Severity
+* MITRE ATT&CK Technique
+* Detection Name
+* First Attempt Time
+* Last Attempt Time
+
+---
+
+# Detection Output Example
+
+| Field     | Example             |
+| --------- | ------------------- |
+| clientip  | 192.168.81.xxx      |
+| attempts  | 50                  |
+| useragent | Hydra               |
+| Severity  | High                |
+| Technique | T1110 - Brute Force |
+
+---
+
+# Related Components
+
+Alert:
+
+```text
+Web Login Brute Force Detection
+```
+
+Dashboard:
+
+```text
+Web Login Brute Force Detection Dashboard
+```
+
+Investigation:
+
+```text
+Web Login Brute Force Investigation Dashboard
+```
+    

