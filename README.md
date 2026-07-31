@@ -57,8 +57,8 @@ This lab demonstrates the complete detection lifecycle by combining attack simul
 | ID | Attack Scenario | MITRE ATT&CK | Status | Documentation / Folder |
 | :---: | :--- | :---: | :---: | :---: |
 | **01** | Network Reconnaissance (Nmap) | [T1046](https://attack.mitre.org/techniques/T1046/) | 🟢 Completed | [`01-Network-Reconnaissance-Nmap`](./01-Network-Reconnaissance-Nmap/) |
-| **02** | SSH/RDP Brute Force (Hydra) | [T1110](https://attack.mitre.org/techniques/T1110/) | 🟡 In Progress | [`02-Brute-Force-Hydra`](./02-Brute-Force-Hydra/) |
-| **03** | Malicious PowerShell Execution | [T1059.001](https://attack.mitre.org/techniques/T1059/001/) | ⚪ Planned | [`03-PowerShell-Attack`](./03-PowerShell-Attack/) |
+| **02** | SSH/RDP Brute Force (Hydra) | [T1110](https://attack.mitre.org/techniques/T1110/) | 🟢 Completed | [`02-Brute-Force-Hydra`](./02-Brute-Force-Hydra/) |
+| **03** | Malicious PowerShell Execution | [T1059.001](https://attack.mitre.org/techniques/T1059/001/) | 🟡 In Progress | [`03-PowerShell-Attack`](./03-PowerShell-Attack/) |
 
 ---
 
