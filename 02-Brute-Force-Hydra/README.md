@@ -1,275 +1,204 @@
-# Web Login Brute Force Detection & Investigation - Splunk SOC Lab
+# Web Login Brute Force Detection using Splunk
 
 ## Overview
 
-This project simulates a real-world Web Login Brute Force attack against a vulnerable web application (DVWA), then demonstrates how a SOC Analyst detects, investigates, and responds to the incident using Splunk SIEM.
+This case study demonstrates how a Web Login Brute Force attack was simulated, detected, investigated, and documented using Splunk Enterprise.
 
-The objective of this scenario is to build a complete detection engineering workflow, starting from attack execution, collecting security logs, creating Splunk detection logic, generating alerts, performing investigation, and documenting the incident.
+The objective was to emulate an attacker performing automated login attempts against DVWA using Hydra and build a complete SOC workflow including detection engineering, automated alerting, email notifications, investigation dashboards, and incident documentation.
 
 ---
 
 # Lab Environment
 
-| Component          | Description                            |
-| ------------------ | -------------------------------------- |
-| SIEM               | Splunk Enterprise                      |
-| Target Application | DVWA (Damn Vulnerable Web Application) |
-| Attack Tool        | Hydra                                  |
-| Log Source         | Apache Access Logs                     |
-| Detection Type     | Web Login Brute Force                  |
-| Severity           | High                                   |
-| MITRE ATT&CK       | T1110 - Brute Force                    |
+| Component   | Description                            |
+| ----------- | -------------------------------------- |
+| SIEM        | Splunk Enterprise                      |
+| Attacker    | Kali Linux                             |
+| Target      | DVWA (Damn Vulnerable Web Application) |
+| Attack Tool | Hydra                                  |
+| Log Source  | Apache Access Logs                     |
+| Alerting    | Scheduled Alert + Email Notification   |
 
 ---
 
-# Attack Scenario
+# Attack Simulation
 
-A brute force attack was simulated against the DVWA login page using Hydra.
+A brute force attack was executed against the DVWA login portal using Hydra to generate repeated HTTP POST authentication attempts.
 
-The attacker attempts multiple username/password combinations against:
+Attack commands are available here:
 
-```
-/dvwa/login.php
-```
-
-The attack generates multiple HTTP POST requests from the same source IP within a short period of time.
-
-The goal of this simulation is to detect abnormal authentication behavior and create a SOC investigation workflow.
+📄 **[attack/hydra_commands.txt](attack/hydra_commands.txt)**
 
 ---
 
-# Attack Execution
+# Attack Evidence
 
-The attack was performed using Hydra to generate repeated login attempts against the DVWA web login portal.
+Hydra Execution
 
-Attack indicators:
-
-* Multiple POST requests to the login endpoint.
-* High number of authentication attempts.
-* Same source IP generating multiple requests.
-* Suspicious automated User-Agent activity.
-
-Attack commands used during the simulation are documented in:
-
-```
-attack/hydra_commands.txt
-```
+![Hydra Execution](screenshots/hydra_execution.png)
 
 ---
 
 # Detection Engineering
 
-A Splunk detection rule was created to identify brute force login behavior.
+A custom SPL detection rule was developed to identify excessive login attempts originating from the same source IP within a 30-second time window.
 
-The detection logic:
+Detection rule:
 
-* Monitors POST requests to the DVWA login page.
-* Groups events by source IP.
-* Counts login attempts within a 30-second window.
-* Triggers when the number of attempts exceeds the defined threshold.
-
-Detection Query:
-
-```
-index=main sourcetype=access_combined method=POST uri="/dvwa/login.php"
-| bin _time span=30s
-| stats count as attempts values(useragent) as useragent earliest(_time) as first_attempt latest(_time) as last_attempt by clientip
-| where attempts >= 5
-```
-
-The complete SPL query is available in:
-
-```
-detection/spl_query.txt
-```
+📄 **[detection/spl_query.txt](detection/spl_query.txt)**
 
 ---
 
-# Alert Configuration
+# Detection Search Result
 
-A scheduled Splunk alert was created for the brute force detection rule.
+The SPL search successfully identified the brute force activity generated during the attack simulation.
 
-Alert configuration:
+Detection Search
 
-* Alert Name:
+![Detection Search](screenshots/spl_search.png)
 
-```
-Web Login Brute Force Detection
-```
+---
 
-* Severity:
+# Alert Generation
 
-```
-High
-```
+A scheduled Splunk alert was configured to automatically detect brute force behavior whenever the defined threshold was exceeded.
 
-* Trigger Condition:
+Alert Triggered
 
-```
-Number of Results > 0
-```
+![Alert Triggered](screenshots/alert_triggered.png)
 
-* Action:
+---
 
-```
+# Email Notification
+
+When the alert conditions were met, Splunk automatically sent an email notification to the SOC analyst.
+
 Email Notification
-```
 
-When the detection condition is met, Splunk automatically generates an alert and sends a notification to the SOC analyst.
+![Email Notification](screenshots/email_notification.png)
 
 ---
 
 # Detection Dashboard
 
-A dedicated Splunk Dashboard was created to visualize the detected brute force activity.
+A dedicated Detection Dashboard was created to provide analysts with a high-level overview of brute force activity.
 
-Dashboard capabilities:
+Dashboard capabilities include:
 
-* Total login attempts.
-* Source IP analysis.
-* Attack timeline visualization.
-* Top attacking sources.
-* Detection summary.
-* Filtering by time range and source IP.
+* Login Attempt Timeline
+* Top Attacking Source IPs
+* Total Login Attempts
+* Detection Summary
+* Interactive Time Range Filter
+* Source IP Filter
+* Drilldown Investigation
 
-The dashboard helps analysts quickly identify suspicious authentication behavior.
+Dashboard Preview
+
+![Detection Dashboard](screenshots/detection_dashboard.png)
 
 ---
 
 # Investigation Workflow
 
-After detecting the alert, the analyst performs investigation using a dedicated Investigation Dashboard.
+Selecting a suspicious Source IP from the Detection Dashboard automatically opens the Investigation Dashboard while passing the selected IP using dashboard tokens.
 
-The workflow:
+Drilldown Workflow
 
-```
-Detection Alert
-       |
-       |
-       v
-Detection Dashboard
-       |
-       |
-       v
-Select Source IP
-       |
-       |
-       v
-Investigation Dashboard
-```
-
-The Source IP is passed through a dashboard drilldown token to automatically filter investigation data.
+![Drilldown Workflow](screenshots/drilldown_workflow.png)
 
 ---
 
 # Investigation Dashboard
 
-The investigation dashboard provides detailed analysis of the attack.
+The Investigation Dashboard enables analysts to perform detailed event analysis through interactive visualizations.
 
-Features:
+Features include:
 
-## Attack Timeline
+* Source IP Investigation
+* Attack Timeline
+* Raw Login Events
+* User-Agent Analysis
+* HTTP Status Distribution
+* Incident Summary
+* Severity Classification
+* MITRE ATT&CK Mapping
 
-Shows when brute force activity started and how the attempts were distributed over time.
+Investigation Preview
 
-## Raw Login Events
+![Investigation Dashboard](screenshots/investigation_dashboard.png)
 
-Displays the original web requests related to the attack.
+---
 
-Information includes:
+# Evidence Review
 
-* Timestamp
-* Source IP
-* HTTP Method
-* Requested URI
-* HTTP Status
-* User-Agent
+Raw Apache Access Log events were reviewed to validate the detection and confirm the brute force attack.
 
-## User-Agent Analysis
+Raw Events
 
-Identifies the client or tool used during the attack.
+![Raw Events](screenshots/raw_events.png)
 
-Examples:
+---
 
-* Hydra
-* Browser
-* Automated scripts
+# Incident Report
 
-## HTTP Status Analysis
+The complete incident investigation report is available here:
 
-Provides visibility into HTTP response behavior during the attack.
-
-## Incident Summary
-
-Provides a quick overview:
-
-* Attacker IP
-* Number of attempts
-* First seen time
-* Last seen time
-* User-Agent
-* Severity
-* MITRE Technique
+📄 **[incident_report.md](incident_report.md)**
 
 ---
 
 # MITRE ATT&CK Mapping
 
-## T1110 - Brute Force
-
-Adversaries may attempt to gain access to accounts by repeatedly trying different passwords or credentials.
-
-This detection focuses on identifying repeated authentication attempts against a web login portal.
+| Technique | Description |
+| --------- | ----------- |
+| T1110     | Brute Force |
 
 ---
 
-# Incident Response Recommendations
+# Project Workflow
 
-Recommended SOC actions:
-
-* Block the attacking source IP if malicious activity is confirmed.
-* Review affected user accounts.
-* Enable multi-factor authentication.
-* Implement login rate limiting.
-* Monitor for additional suspicious activity from the same source.
-* Investigate whether successful authentication occurred.
-
----
-
-# Project Structure
-
-```
-02-Brute-Force-Hydra
-│
-├── README.md
-├── incident_report.md
-│
-├── attack
-│   └── hydra_commands.txt
-│
-├── detection
-│   └── spl_query.txt
-│
-└── screenshots
-    ├── hydra_execution.png
-    ├── spl_search.png
-    ├── alert_triggered.png
-    ├── email_notification.png
-    ├── detection_dashboard.png
-    ├── drilldown_workflow.png
-    ├── investigation_dashboard.png
-    └── raw_events.png
+```text
+Hydra Attack
+      │
+      ▼
+Apache Access Logs
+      │
+      ▼
+Splunk Detection Rule
+      │
+      ▼
+Scheduled Alert
+      │
+      ▼
+Email Notification
+      │
+      ▼
+Detection Dashboard
+      │
+      ▼
+Drilldown Investigation
+      │
+      ▼
+Investigation Dashboard
+      │
+      ▼
+Incident Report
 ```
 
 ---
 
 # Skills Demonstrated
 
-* Splunk SIEM Detection Engineering
+* Splunk Enterprise
 * SPL Query Development
-* Alert Creation and Notification
-* Web Attack Detection
+* Detection Engineering
+* Web Application Security Monitoring
+* Apache Access Log Analysis
+* Dashboard Studio
+* Alert Engineering
+* Email Notification Configuration
 * SOC Investigation Workflow
+* Threat Hunting
 * MITRE ATT&CK Mapping
-* Incident Documentation
-* Dashboard Development
+* Incident Response Documentation
