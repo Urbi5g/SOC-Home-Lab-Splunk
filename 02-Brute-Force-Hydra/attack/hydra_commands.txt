@@ -1,120 +1,328 @@
-# Hydra Web Login Brute Force Attack Commands
+=========================================================
+Hydra Web Login Brute Force Attack Documentation
+================================================
 
-## Attack Overview
+## Attack Name
 
-This file documents the commands used to simulate a Web Login Brute Force attack against the DVWA vulnerable application using Hydra.
-
-Attack Type:
-
-```
-Web Login Brute Force
-```
-
-Target:
-
-```
-DVWA Login Page
-```
-
-Tool:
-
-```
-Hydra
-```
-
-MITRE ATT&CK Technique:
-
-```
-T1110 - Brute Force
-```
+Web Login Brute Force Against DVWA
 
 ---
 
-# Target Information
+## Attack Objective
 
-Target URL:
+The purpose of this exercise is to simulate an automated brute force attack
+against the DVWA (Damn Vulnerable Web Application) login page using Hydra.
 
-```
-http://<TARGET-IP>/dvwa/login.php
-```
+The attack generates repeated HTTP POST authentication requests that are later
+collected by Apache Access Logs, forwarded into Splunk Enterprise, and used to
+validate custom detection rules, automated alerting, and SOC investigation
+workflows.
 
-Example:
-
-```
-http://192.168.81.xxx/dvwa/login.php
-```
-
----
-
-# Wordlist Preparation
-
-Username:
-
-```
-admin
-```
-
-Password wordlist:
-
-```
-passwords.txt
-```
+This attack was executed in a controlled SOC Home Lab environment for defensive
+security training and detection engineering practice.
 
 ---
 
-# Hydra HTTP POST Form Attack
+## MITRE ATT&CK Mapping
 
-Command:
+Technique ID
 
-```bash
-hydra -l admin -P passwords.txt <TARGET-IP> http-post-form "/dvwa/login.php:username=^USER^&password=^PASS^&Login=Login:F=Login failed"
-```
+T1110
 
----
+Technique Name
 
-# Command Explanation
+Brute Force
 
-| Option           | Description                                              |
-| ---------------- | -------------------------------------------------------- |
-| -l admin         | Specifies the username used during the attack            |
-| -P passwords.txt | Specifies the password wordlist                          |
-| TARGET-IP        | Target DVWA server address                               |
-| http-post-form   | Hydra module for HTTP POST login forms                   |
-| /dvwa/login.php  | Target login endpoint                                    |
-| ^USER^           | Hydra username placeholder                               |
-| ^PASS^           | Hydra password placeholder                               |
-| F=Login failed   | Failure condition used to identify unsuccessful attempts |
+Tactic
+
+Credential Access
 
 ---
 
-# Attack Indicators Generated
+## Lab Environment
 
-During the attack, the following activity was generated:
+Attacker Machine
 
-* Multiple HTTP POST requests.
-* Repeated requests to `/dvwa/login.php`.
-* High authentication attempt frequency.
-* Same source IP generating multiple login attempts.
-* Automated User-Agent activity.
+Kali Linux
 
-These indicators were collected through Apache Access Logs and analyzed in Splunk SIEM.
+Target Application
+
+DVWA (Damn Vulnerable Web Application)
+
+Authentication Method
+
+HTTP POST
+
+Target Endpoint
+
+/dvwa/login.php
+
+SIEM Platform
+
+Splunk Enterprise
+
+Log Source
+
+Apache Access Logs
 
 ---
 
-# Evidence Collection
+## Attack Prerequisites
 
-The following screenshots were captured:
+Before executing the attack, the following conditions must be met:
 
-```
-screenshots/hydra_execution.png
-```
+• DVWA must be accessible from the attacker machine.
 
-This screenshot shows the Hydra attack execution and generated login attempts.
+• Apache logging must be enabled.
+
+• Splunk must be ingesting Apache Access Logs.
+
+• A valid username or a username list must be available.
+
+• A password wordlist must be prepared.
 
 ---
 
-# Notes
+## Target Information
 
-This attack was performed in a controlled SOC Home Lab environment for detection engineering and investigation practice.
+Example Target URL
 
-No production systems or real user accounts were targeted.
+http://192.168.xxx.xxx/dvwa/login.php
+
+Hydra communicates directly with the login endpoint by repeatedly submitting
+HTTP POST authentication requests using different password combinations until
+the wordlist is exhausted or valid credentials are discovered.
+
+---
+
+## Hydra Command
+
+hydra -l admin -P passwords.txt 192.168.xxx.xxx http-post-form "/dvwa/login.php:username=^USER^&password=^PASS^&Login=Login:F=Login failed"
+
+---
+
+## Command Breakdown
+
+-l admin
+
+Specifies a single username for authentication attempts.
+
+Instead of testing multiple usernames, Hydra repeatedly attempts different
+passwords for the account named "admin".
+
+---
+
+-P passwords.txt
+
+Loads a password dictionary from the specified file.
+
+Hydra reads the file line by line and submits every password against the target
+authentication page.
+
+---
+
+192.168.xxx.xxx
+
+Specifies the target web server hosting DVWA.
+
+---
+
+http-post-form
+
+Selects Hydra's HTTP POST module.
+
+Unlike FTP or SSH attacks, this module is designed specifically for web login
+forms that submit credentials using HTTP POST requests.
+
+---
+
+/dvwa/login.php
+
+The login endpoint responsible for processing user authentication.
+
+Every password attempt is submitted to this page.
+
+---
+
+username=^USER^
+
+Hydra automatically replaces the ^USER^ placeholder with the username provided
+through the command line.
+
+---
+
+password=^PASS^
+
+Hydra automatically replaces the ^PASS^ placeholder with each password read
+from the supplied wordlist.
+
+---
+
+Login=Login
+
+Represents the value of the HTML submit button required by the DVWA login form.
+
+Without including this parameter, the request may not accurately emulate a real
+user login attempt.
+
+---
+
+F=Login failed
+
+Defines the failure condition.
+
+Hydra examines the server response after each login attempt.
+
+If the response contains the text "Login failed", Hydra considers the attempt
+unsuccessful and continues testing the next password.
+
+If the failure string is absent, Hydra assumes authentication was successful.
+
+---
+
+## Attack Workflow
+
+Hydra starts by reading the username and password list.
+
+↓
+
+HTTP POST requests are generated automatically.
+
+↓
+
+Apache records every authentication request.
+
+↓
+
+Splunk Universal Forwarder collects Apache Access Logs.
+
+↓
+
+Logs are indexed by Splunk Enterprise.
+
+↓
+
+Custom SPL detection identifies excessive login attempts.
+
+↓
+
+A scheduled alert is generated.
+
+↓
+
+An email notification is sent.
+
+↓
+
+The analyst investigates the activity using the Detection and Investigation
+Dashboards.
+
+---
+
+## Expected Indicators of Compromise (IOCs)
+
+The attack generates several observable indicators:
+
+• High volume of HTTP POST requests.
+
+• Multiple requests targeting /dvwa/login.php.
+
+• Repeated authentication failures.
+
+• Same source IP generating consecutive requests.
+
+• Automated User-Agent values.
+
+• Increased authentication frequency within a short time window.
+
+These indicators provide sufficient evidence for brute force detection within
+Splunk.
+
+---
+
+## Expected Log Evidence
+
+Apache Access Logs record information such as:
+
+• Timestamp
+
+• Source IP Address
+
+• HTTP Method
+
+• Requested URI
+
+• HTTP Status Code
+
+• User-Agent
+
+These events become the primary telemetry source used by the detection rule.
+
+---
+
+## Evidence Collected
+
+The following screenshots document the attack lifecycle:
+
+• hydra_execution.png
+
+Hydra command execution.
+
+• spl_search.png
+
+Splunk search results showing captured login attempts.
+
+• alert_triggered.png
+
+Scheduled alert generated by Splunk.
+
+• email_notification.png
+
+Alert notification delivered via email.
+
+• detection_dashboard.png
+
+Detection dashboard highlighting brute force activity.
+
+• drilldown_workflow.png
+
+Dashboard drilldown from detection to investigation.
+
+• investigation_dashboard.png
+
+Detailed investigation dashboard.
+
+• raw_events.png
+
+Raw Apache Access Log events confirming the attack.
+
+---
+
+## Key Learning Outcomes
+
+This exercise demonstrates how offensive activity can be transformed into
+actionable defensive telemetry.
+
+The scenario provides practical experience in:
+
+• Web Application Attack Simulation
+
+• Apache Log Analysis
+
+• Detection Engineering
+
+• Splunk SPL Development
+
+• Alert Engineering
+
+• Email Notification Configuration
+
+• Dashboard Development
+
+• SOC Investigation Workflow
+
+• MITRE ATT&CK Mapping
+
+• Security Incident Documentation
+
+=========================================================
