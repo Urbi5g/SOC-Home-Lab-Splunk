@@ -213,7 +213,7 @@ The following evidence was collected during the investigation:
 
 The Hydra execution output demonstrates that the brute force simulation was actively performed against the DVWA authentication endpoint.
 
-![Hydra Brute Force Execution](screenshots/hydra_bruteforce_execution.png)
+![Hydra Brute Force Execution](screenshots/hydra_execution.png)
 
 **Evidence:** Hydra command execution and automated authentication attempts.
 
