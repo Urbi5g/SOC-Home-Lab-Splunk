@@ -1,4 +1,4 @@
-# Incident Report: Web Login Brute Force Attack
+0# Incident Report: Web Login Brute Force Attack
 
 | Field            | Value                              |
 |------------------|------------------------------------|
@@ -221,7 +221,7 @@ The Hydra execution output demonstrates that the brute force simulation was acti
 
 The Splunk evidence demonstrates the detection of the abnormal authentication activity and supports the investigation workflow.
 
-![Splunk Brute Force Detection](screenshots/splunk_bruteforce_detection.png)
+![Splunk Brute Force Detection](screenshots/investigation_dashboard.png)
 
 **Evidence:** Detection search results, alert activity and investigation workflow in Splunk.
 
