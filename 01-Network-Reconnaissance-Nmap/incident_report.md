@@ -249,13 +249,13 @@ The investigation used Splunk dashboards and search results to validate the reco
 
 ### 10.1 Detection Dashboard
 
-![Reconnaissance Detection Dashboard](screenshots/recon_detection_dashboard.png)
+![Reconnaissance Detection Dashboard](screenshots/detection_dashboard.png)
 
 **Evidence:** The dashboard provides visibility into the detected reconnaissance activity, including source activity and targeted ports.
 
 ### 10.2 Investigation Dashboard
 
-![Reconnaissance Investigation Dashboard](screenshots/recon_investigation_dashboard.png)
+![Reconnaissance Investigation Dashboard](screenshots/investigation_dashboard.png)
 
 **Evidence:** The investigation dashboard provides deeper analysis of the source IP, destination ports, timeline, and raw Windows Security events.
 
