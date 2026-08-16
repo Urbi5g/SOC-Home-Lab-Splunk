@@ -1,0 +1,448 @@
+============================================================
+SOC HOME LAB — SPLUNK DETECTION
+Incident: PowerShell Attack
+MITRE ATT&CK: T1059.001
+============================================================
+
+Purpose:
+Detect suspicious PowerShell execution originating from cmd.exe
+and identify PowerShell commands using encoded command-line
+arguments.
+
+Index:
+main
+
+Sourcetype:
+XmlWinEventLog:Microsoft-Windows-Sysmon/Operational
+
+
+============================================================
+1. PRIMARY DETECTION — PowerShell Spawned by CMD
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+ParentImage="*cmd.exe*"
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+Detection Logic:
+- Identifies PowerShell execution.
+- Checks whether PowerShell was launched by cmd.exe.
+- Displays the user, host, process relationship, and command line.
+- Useful for identifying suspicious command interpreter chains.
+
+
+============================================================
+2. ENCODED POWERSHELL DETECTION
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+(CommandLine="*-e *" OR CommandLine="*-enc *" OR CommandLine="*-EncodedCommand*")
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+Detection Logic:
+- Searches for PowerShell encoded-command parameters.
+- Detects common forms:
+    - -e
+    - -enc
+    - -EncodedCommand
+- Encoded PowerShell can be used to obscure malicious commands
+  from basic command-line inspection.
+
+
+============================================================
+3. COMBINED DETECTION — CMD + ENCODED POWERSHELL
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+ParentImage="*cmd.exe*"
+(CommandLine="*-e *" OR CommandLine="*-enc *" OR CommandLine="*-EncodedCommand*")
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+Detection Logic:
+This is the primary high-confidence detection used in the
+PowerShell attack simulation.
+
+The detection requires three conditions:
+
+1. PowerShell is executed.
+2. PowerShell was spawned by cmd.exe.
+3. The PowerShell command line contains an encoded-command
+   parameter.
+
+This combination provides stronger detection confidence than
+detecting PowerShell execution alone.
+
+
+============================================================
+4. POWERSHELL PROCESS TIMELINE
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+| stats count min(_time) as first_seen max(_time) as last_seen
+  values(ParentImage) as ParentImage
+  values(User) as User
+  values(CommandLine) as CommandLine
+  by host Image
+| convert ctime(first_seen) ctime(last_seen)
+| sort -last_seen
+
+
+Purpose:
+Provides a high-level timeline of PowerShell execution across
+the monitored Windows endpoint.
+
+
+============================================================
+5. TOP POWERSHELL PARENT PROCESSES
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+| stats count by ParentImage
+| sort -count
+
+
+Purpose:
+Identifies which processes most frequently launch PowerShell.
+
+Examples of potentially interesting parents:
+
+cmd.exe
+wscript.exe
+cscript.exe
+mshta.exe
+winword.exe
+excel.exe
+outlook.exe
+services.exe
+
+
+============================================================
+6. POWERSHELL EXECUTION BY USER
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+| stats count by User
+| sort -count
+
+
+Purpose:
+Identifies users associated with PowerShell execution and helps
+analysts identify unusual execution patterns.
+
+
+============================================================
+7. POWERSHELL EXECUTION BY HOST
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+| stats count by host
+| sort -count
+
+
+Purpose:
+Identifies Windows systems generating PowerShell execution events.
+
+
+============================================================
+8. RECENT SUSPICIOUS POWERSHELL ACTIVITY
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+(ParentImage="*cmd.exe*"
+ OR CommandLine="*-e *"
+ OR CommandLine="*-enc *"
+ OR CommandLine="*-EncodedCommand*")
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+Purpose:
+Provides a practical analyst investigation query for reviewing
+recent suspicious PowerShell activity.
+
+
+============================================================
+9. POWERSHELL DOWNLOAD / EXECUTION INDICATORS
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+(CommandLine="*IEX*"
+ OR CommandLine="*Invoke-WebRequest*"
+ OR CommandLine="*DownloadString*"
+ OR CommandLine="*DownloadFile*"
+ OR CommandLine="*WebClient*"
+ OR CommandLine="*FromBase64String*")
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+Purpose:
+Searches for PowerShell command-line patterns commonly associated
+with downloading, decoding, or dynamically executing content.
+
+
+============================================================
+10. POWERSHELL OBFUSCATION / ENCODED COMMAND INVESTIGATION
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+(CommandLine="*-e *"
+ OR CommandLine="*-enc *"
+ OR CommandLine="*-EncodedCommand*"
+ OR CommandLine="*FromBase64String*")
+| eval DetectionReason=case(
+    match(CommandLine,"(?i)-encodedcommand"),"EncodedCommand",
+    match(CommandLine,"(?i)-enc"),"Encoded PowerShell",
+    match(CommandLine,"(?i)-e "), "Encoded PowerShell",
+    match(CommandLine,"(?i)FromBase64String"),"Base64 Decoding",
+    true(),"PowerShell Obfuscation"
+  )
+| table _time host User Image ParentImage CommandLine ProcessId DetectionReason
+| sort -_time
+
+
+Purpose:
+Adds a DetectionReason field to help the SOC analyst quickly
+understand why an event was selected.
+
+
+============================================================
+11. DASHBOARD — POWERSHELL ATTACK TIMELINE
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+| timechart count span=1m
+
+
+Purpose:
+Displays PowerShell execution activity over time.
+
+Recommended visualization:
+Line Chart
+
+
+============================================================
+12. DASHBOARD — TOP POWERSHELL USERS
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+| stats count by User
+| sort -count
+
+
+Recommended visualization:
+Bar Chart
+
+
+============================================================
+13. DASHBOARD — POWERSHELL PARENT PROCESS
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+| stats count by ParentImage
+| sort -count
+
+
+Recommended visualization:
+Bar Chart
+
+
+============================================================
+14. DASHBOARD — ENCODED POWERSHELL ACTIVITY
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+(CommandLine="*-e *"
+ OR CommandLine="*-enc *"
+ OR CommandLine="*-EncodedCommand*")
+| timechart count span=1m
+
+
+Recommended visualization:
+Column Chart / Line Chart
+
+
+============================================================
+15. DASHBOARD — SUSPICIOUS POWERSHELL EVENTS
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+(ParentImage="*cmd.exe*"
+ OR CommandLine="*-e *"
+ OR CommandLine="*-enc *"
+ OR CommandLine="*-EncodedCommand*")
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+Recommended visualization:
+Table
+
+
+============================================================
+16. PRIMARY INVESTIGATION QUERY
+============================================================
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+(ParentImage="*cmd.exe*"
+ OR CommandLine="*-e *"
+ OR CommandLine="*-enc *"
+ OR CommandLine="*-EncodedCommand*")
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+Investigation Workflow:
+
+Detection
+   ↓
+Suspicious PowerShell Event
+   ↓
+Review Parent Process
+   ↓
+Review User
+   ↓
+Review CommandLine
+   ↓
+Check Encoded/Obfuscated Execution
+   ↓
+Correlate Process ID / Timeline
+   ↓
+Validate Attack Simulation
+   ↓
+MITRE ATT&CK Mapping
+   ↓
+Incident Documentation
+
+
+============================================================
+17. OBSERVED ATTACK EVIDENCE
+============================================================
+
+Observed event during the Atomic Red Team simulation:
+
+Host:
+DESKTOP-HCNDFJJ
+
+User:
+DESKTOP-HCNDFJJ\حذيفه أبو الرجال
+
+Image:
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+
+ParentImage:
+C:\Windows\System32\cmd.exe
+
+ProcessId:
+13776
+
+Observed Command Pattern:
+
+powershell.exe -e <Base64-encoded command>
+
+
+The observed event confirms that PowerShell was executed through
+cmd.exe using the -e parameter.
+
+This behavior is consistent with the Atomic Red Team
+PowerShell Command Execution test under:
+
+MITRE ATT&CK T1059.001 — PowerShell
+
+
+============================================================
+18. MITRE ATT&CK MAPPING
+============================================================
+
+Tactic:
+Execution
+
+Technique:
+T1059 — Command and Scripting Interpreter
+
+Sub-Technique:
+T1059.001 — PowerShell
+
+Relevant Detection Indicators:
+
+- powershell.exe
+- cmd.exe as ParentImage
+- -e
+- -enc
+- -EncodedCommand
+- Base64 encoded PowerShell commands
+- PowerShell download/execute patterns
+
+
+============================================================
+19. DETECTION SUMMARY
+============================================================
+
+Primary Detection:
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+ParentImage="*cmd.exe*"
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+Enhanced Encoded PowerShell Detection:
+
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+Image="*powershell.exe*"
+ParentImage="*cmd.exe*"
+(CommandLine="*-e *" OR CommandLine="*-enc *" OR CommandLine="*-EncodedCommand*")
+| table _time host User Image ParentImage CommandLine ProcessId
+| sort -_time
+
+
+============================================================
+20. ANALYST NOTES
+============================================================
+
+This detection was validated in a controlled SOC Home Lab using
+Atomic Red Team.
+
+The test generated Sysmon process creation telemetry that was
+successfully ingested into Splunk Enterprise.
+
+The detection successfully identified:
+
+- PowerShell execution.
+- cmd.exe → powershell.exe process relationship.
+- Encoded PowerShell execution.
+- User and host context.
+- Process ID.
+- Full command-line evidence.
+
+The activity was classified as a controlled attack simulation.
+
+No production systems were affected.
+
+
+============================================================
+END OF SPL QUERY FILE
+============================================================
