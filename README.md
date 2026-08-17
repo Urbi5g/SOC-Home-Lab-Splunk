@@ -57,59 +57,41 @@ The lab is designed as a layered SOC environment where security telemetry is gen
 ### Core Architecture
 
 ```text
-                         ┌──────────────────────┐
+                        ┌──────────────────────┐
                          │     Kali Linux       │
                          │  Adversary Emulator  │
                          │ Nmap / Hydra / etc.  │
                          └──────────┬───────────┘
-                                    │
+                                    │ (WAN Traffic)
                                     ▼
                          ┌──────────────────────┐
                          │      OPNsense        │
-                         │      Firewall        │
-                         │ Network Gateway      │
+                         │   Firewall Gateway   │
+                         │          +           │
+                         │     Suricata IDS     │ <--- (Network Telemetry & Alerts)
                          └──────────┬───────────┘
-                                    │
+                                    │ (LAN Traffic)
                        ┌────────────┴────────────┐
                        │                         │
                        ▼                         ▼
-              ┌────────────────┐       ┌────────────────┐
-              │    Suricata    │       │ Windows Network│
-              │    IDS / IPS   │       │   Traffic      │
-              └───────┬────────┘       └───────┬────────┘
-                      │                         │
-                      └────────────┬────────────┘
-                                   │
-                                   ▼
-                    ┌───────────────────────────┐
-                    │      Windows Server       │
-                    │    Active Directory       │
-                    │     Domain Services       │
-                    └─────────────┬─────────────┘
-                                  │
-                                  ▼
-                    ┌───────────────────────────┐
-                    │      Windows Endpoint     │
-                    │ Security Logs + Sysmon    │
-                    └─────────────┬─────────────┘
-                                  │
-                                  ▼
-                    ┌───────────────────────────┐
-                    │       Splunk Enterprise    │
-                    │                            │
-                    │  Log Ingestion             │
-                    │  Detection Engineering     │
-                    │  Threat Hunting            │
-                    │  Correlation               │
-                    │  Dashboards                │
-                    └─────────────┬─────────────┘
-                                  │
-                                  ▼
-                    ┌───────────────────────────┐
-                    │       SOC Analyst         │
-                    │ Detection → Investigation │
-                    │ → Documentation → Response │
-                    └───────────────────────────┘
+            ┌─────────────────────┐   ┌─────────────────────┐
+            │   Windows Server    │   │  Windows Endpoint   │
+            │  Active Directory   │   │                     │
+            │  (Identity Layer)   │   │ (Endpoint Layer)    │
+            └──────────┬──────────┘   └──────────┬──────────┘
+                       │                         │
+                       └────────────┬────────────┘
+                                    │ (Sysmon / Windows Event Logs / Syslog)
+                                    ▼
+                         ┌──────────────────────┐
+                         │   Splunk Enterprise  │
+                         │     (SIEM Layer)     │
+                         │                      │
+                         │  - Log Ingestion     │
+                         │  - Correlation       │
+                         │  - Threat Hunting    │
+                         │  - Dashboards        │
+                         └──────────────────────┘
 ```
 
 ---
