@@ -1,0 +1,69 @@
+# ==========================================
+# SOC Home Lab - Git Ignore
+# ==========================================
+
+# ------------------------------
+# Operating System Files
+# ------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------------
+# Editor / IDE Files
+# ------------------------------
+.vscode/
+.idea/
+
+# ------------------------------
+# Temporary / Backup Files
+# ------------------------------
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ------------------------------
+# Logs
+# ------------------------------
+*.log
+
+# ------------------------------
+# Secrets / Credentials
+# ------------------------------
+.env
+.env.*
+*.key
+*.pem
+*.pfx
+*.p12
+credentials.txt
+secrets.txt
+
+# ------------------------------
+# Virtual Machine Files
+# Large binary files should not be
+# stored directly in this repository.
+# ------------------------------
+*.vmdk
+*.vdi
+*.vhd
+*.vhdx
+*.ova
+
+# ------------------------------
+# Packet Captures
+# PCAP files can become very large.
+# Store only intentionally selected
+# evidence in the repository.
+# ------------------------------
+*.pcap
+*.pcapng
+
+# ------------------------------
+# Python Cache
+# ------------------------------
+__pycache__/
+*.pyc
