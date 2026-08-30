@@ -1,581 +1,252 @@
 # PowerShell Attack Detection using Splunk
 
-> **SOC Home Lab | Detection Engineering | Atomic Red Team | Splunk Enterprise | Sysmon**
+## Overview
 
----
+This case study demonstrates how a PowerShell-based attack was simulated, detected, investigated, and documented using Splunk Enterprise and Sysmon.
 
-## Case Overview
-
-This case study demonstrates the complete simulation, detection, alerting, investigation, and documentation of a PowerShell-based attack using **Atomic Red Team** and **Splunk Enterprise**.
-
-The activity was mapped primarily to:
-
-**MITRE ATT&CK T1059.001 – Command and Scripting Interpreter: PowerShell**
-
-The objective was to simulate realistic PowerShell execution behavior and validate whether the SOC monitoring environment could:
-
-- Generate realistic attack telemetry.
-- Collect Windows Sysmon events.
-- Detect suspicious PowerShell execution.
-- Identify encoded PowerShell commands.
-- Trigger a Splunk alert.
-- Visualize the activity through a dashboard.
-- Investigate the underlying event.
-- Map the behavior to MITRE ATT&CK.
-- Document the complete incident.
-
-> **Environment:** Controlled SOC Home Lab  
-> **Production Impact:** None  
-> **Incident Status:** Closed  
-> **Detection Status:** Successfully Detected
-
----
-
-# Quick Navigation
-
-| Section | Description |
-|--------|-------------|
-| [Case Overview](#case-overview) | Case summary and objectives |
-| [Lab Environment](#lab-environment) | Infrastructure and telemetry |
-| [Attack Simulation](#attack-simulation) | Atomic Red Team simulation |
-| [Attack Evidence](#attack-evidence) | Attack execution evidence |
-| [Detection Engineering](#detection-engineering) | SPL detection methodology |
-| [Encoded PowerShell Detection](#encoded-powershell-detection) | Encoded command detection |
-| [Alerting](#alerting) | Splunk alert workflow |
-| [Detection Dashboard](#detection-dashboard) | Dashboard investigation |
-| [Investigation Workflow](#investigation-workflow) | SOC L1 investigation process |
-| [Evidence Review](#evidence-review) | Raw event analysis |
-| [MITRE ATT&CK Mapping](#mitre-attck-mapping) | ATT&CK classification |
-| [Lessons Learned](#lessons-learned) | Detection insights |
-| [Incident Report](#incident-report) | Complete incident documentation |
-| [Repository Structure](#repository-structure) | Project organization |
-
----
-
-# Case Summary
-
-| Field | Value |
-|------|-------|
-| **Case ID** | SOC-2026-003 |
-| **Attack Type** | PowerShell Attack Simulation |
-| **Primary Technique** | T1059.001 |
-| **Attack Framework** | Atomic Red Team |
-| **SIEM** | Splunk Enterprise |
-| **Telemetry** | Sysmon |
-| **Operating System** | Windows 10 |
-| **Detection Method** | SPL |
-| **Alerting** | Splunk Alert |
-| **Dashboard** | PowerShell Detection Dashboard |
-| **Severity** | High |
-| **Priority** | P2 |
-| **Status** | Closed |
-| **Environment** | SOC Home Lab |
+The objective was to emulate realistic PowerShell execution behavior using Atomic Red Team (T1059.001) and build a complete SOC workflow including detection engineering, alerting, dashboard visualization, investigation, and MITRE ATT&CK mapping.
 
 ---
 
 # Lab Environment
 
 | Component | Description |
-|------------|-------------|
+| --------- | ----------- |
 | SIEM | Splunk Enterprise |
 | Attack Framework | Atomic Red Team |
 | Monitored Host | Windows 10 |
 | Telemetry Source | Sysmon |
-| Log Type | Windows Sysmon Operational |
+| Log Source | Microsoft-Windows-Sysmon/Operational |
 | Splunk Index | `main` |
-| Sourcetype | `XmlWinEventLog:Microsoft-Windows-Sysmon/Operational` |
-| Primary Event | Sysmon Process Creation |
-| Primary Technique | T1059.001 |
-
-The lab environment was intentionally configured to generate security telemetry that could be collected and analyzed by Splunk.
+| Primary Event | Sysmon Event ID 1 - Process Creation |
 
 ---
 
 # Attack Simulation
 
-The attack simulation was performed using **Atomic Red Team**.
+A PowerShell attack simulation was performed using Atomic Red Team mapped to MITRE ATT&CK T1059.001 – Command and Scripting Interpreter: PowerShell.
 
-Atomic Red Team provides controlled security tests mapped to MITRE ATT&CK techniques.
+The simulation included multiple execution techniques such as standard PowerShell execution, encoded commands, download cradles, and obfuscation to generate realistic endpoint telemetry.
 
-The selected test family was:
+Attack commands are available here:
 
-**T1059.001 – Command and Scripting Interpreter: PowerShell**
-
-The available Atomic Red Team tests included several PowerShell execution behaviors, including:
-
-- PowerShell command execution
-- Encoded PowerShell
-- PowerShell download cradles
-- Fileless PowerShell execution
-- PowerShell command-line variations
-- PowerShell obfuscation
-- PowerShell-based discovery
-- PowerShell privilege escalation simulations
-
-The purpose of the simulation was to generate realistic endpoint telemetry rather than compromise a production system.
-
-### Attack Documentation
-
-The Atomic Red Team test information and execution documentation are available here:
-
-📄 **[Atomic Red Team Attack Documentation](./attack/atomic_red_team_commands.txt)**
+📄 **[attack/atomic_red_team_commands.txt](./attack/attack_commands.txt)**
 
 ---
 
 # Attack Evidence
 
-The attack execution generated Sysmon process creation events containing:
+PowerShell Attack Execution via Atomic Red Team
 
-- Hostname
-- Username
-- Process image
-- Parent process
-- Process ID
-- Command line
-- PowerShell parameters
-- Timestamp
-
-### Attack Execution
-
-![PowerShell Attack Execution](./screenshots/01_powershell_attack.png)
-
-**Figure 1 — Atomic Red Team PowerShell Attack Execution**
-
-This evidence demonstrates the controlled PowerShell attack simulation performed inside the SOC Home Lab.
+![PowerShell Attack Execution](./evidence/screenshots/powershell_attack.png)
 
 ---
 
 # Detection Engineering
 
-After generating the attack telemetry, a custom Splunk detection was developed to identify suspicious PowerShell execution.
+A custom SPL detection rule was developed to identify suspicious PowerShell execution based on parent-child process relationship (cmd.exe → powershell.exe) and encoded command-line parameters.
 
-The detection focused on the parent-child process relationship:
+The detection focuses on identifying PowerShell spawned from a command shell, which is a common initial execution pattern.
 
-```text
-cmd.exe
-   ↓
-powershell.exe
+Detection rule:
 
-This relationship is useful for identifying PowerShell execution initiated through a Windows command shell.
+📄 **[detection/spl_query.txt](detection/spl_query.txt)**
 
-Detection Documentation
-
-The complete SPL query is available here:
-
-📄 Open SPL Detection Query
-
-Primary Detection
+```spl
 index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
-Image="*powershell.exe*"
-ParentImage="*cmd.exe*"
-| table _time host User Image ParentImage CommandLine
+Image="*powershell.exe*" ParentImage="*cmd.exe*"
+| table _time host User Image ParentImage CommandLine ProcessId
 | sort -_time
+```
 
-The query extracts the following investigation fields:
+---
 
-_time
-host
-User
-Image
-ParentImage
-CommandLine
+# Encoded PowerShell Detection
 
-This provides the SOC analyst with immediate process execution context.
+A second detection layer was developed to identify obfuscated execution using encoded parameters:
 
-Encoded PowerShell Detection
-
-During the investigation, an encoded PowerShell command was identified.
-
-The observed command contained:
-
-powershell.exe -e
-
-A second detection query was developed to identify common encoded PowerShell parameters:
-
+```spl
 index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
 Image="*powershell.exe*"
 (CommandLine="*-e *" OR CommandLine="*-enc *" OR CommandLine="*-EncodedCommand*")
 | table _time host User Image ParentImage CommandLine ProcessId
 | sort -_time
+```
 
-The detection identifies:
+This detects: `-e`, `-enc`, `-EncodedCommand`
 
--e
--enc
--EncodedCommand
+---
 
-These parameters are commonly associated with encoded PowerShell command execution.
+# Detection Search Result
 
-Important: The presence of an encoded PowerShell command alone does not prove malicious activity. Detection confidence increases when it is correlated with process ancestry, user context, endpoint behavior, and other telemetry.
+The SPL search successfully identified the simulated PowerShell activity and extracted critical investigation fields including Host, User, ParentImage, CommandLine, and ProcessId.
 
-Detection Result
+Detection Search
 
-The SPL search successfully identified the simulated PowerShell activity.
+![Detection Search](./evidence/screenshots/splunk_query.png)
 
-The observed event contained:
+---
 
-Field	Value
-Host	DESKTOP-HCNDFJJ
-User	DESKTOP-HCNDFJJ\حذيفه أبو الرجال
-Image	C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
-Parent Image	C:\Windows\System32\cmd.exe
-Process ID	13776
-Encoded Parameter	-e
-Sourcetype	XmlWinEventLog:Microsoft-Windows-Sysmon/Operational
-SPL Search Evidence
+# Alert Generation
 
-Figure 2 — Splunk SPL Detection Result
+A scheduled Splunk alert was configured to automatically trigger when suspicious PowerShell execution was detected, enabling real-time SOC notification.
 
-The event confirmed that PowerShell was launched by cmd.exe and that an encoded command was supplied through the PowerShell command line.
+Alert Triggered
 
-Alerting
+![Alert Triggered](./evidence/screenshots/splunk_alert.png)
 
-After validating the detection logic, a Splunk alert was configured to notify the SOC when suspicious PowerShell activity was detected.
+---
 
-The detection workflow was:
+# Detection Dashboard
 
-Atomic Red Team
-      ↓
-PowerShell Execution
-      ↓
-Sysmon Event
-      ↓
-Splunk Ingestion
-      ↓
-SPL Detection
-      ↓
-Alert Trigger
-      ↓
-SOC Notification
-      ↓
-Investigation
-Alert Evidence
+A dedicated PowerShell Detection Dashboard was created to provide centralized visibility into suspicious PowerShell activity.
 
-Figure 3 — Splunk PowerShell Detection Alert
+Dashboard capabilities include:
 
-The alert confirms that the detection logic successfully generated a security alert from the simulated activity.
+* PowerShell Execution Timeline
+* Executing Hosts & Users
+* Parent Process Analysis
+* Command-Line Activity Monitoring
+* Encoded PowerShell Activity
+* Process ID Tracking
+* Interactive Investigation Panel
 
-Detection Dashboard
-
-A dedicated PowerShell Detection Dashboard was created to provide analysts with centralized visibility into suspicious PowerShell activity.
-
-The dashboard provides visibility into:
-
-PowerShell execution timeline
-Executing hosts
-Executing users
-Parent processes
-PowerShell processes
-Command-line activity
-Encoded PowerShell activity
-Process IDs
-Investigation events
 Dashboard Preview
 
-Figure 4 — PowerShell Detection Dashboard
+![Detection Dashboard](./evidence/screenshots/powershell_dashboard.png)
 
-The dashboard allows the analyst to move from high-level detection information into detailed event investigation.
+---
+
+# Investigation Workflow
+
+The investigation followed a standard SOC L1 workflow from detection to documentation.
 
 Investigation Workflow
 
-The investigation followed a standard SOC L1 workflow.
-
+```text
 Detection
-   ↓
+   │
+   ▼
 Alert Review
-   ↓
-Identify Host
-   ↓
-Identify User
-   ↓
+   │
+   ▼
+Identify Host & User
+   │
+   ▼
 Review Parent Process
-   ↓
+   │
+   ▼
 Analyze Command Line
-   ↓
+   │
+   ▼
 Identify Encoded PowerShell
-   ↓
+   │
+   ▼
 Validate Sysmon Event
-   ↓
+   │
+   ▼
 MITRE ATT&CK Mapping
-   ↓
+   │
+   ▼
 Incident Documentation
+```
 
-The analyst investigated:
+Analyst Focus:
 
-Which host executed PowerShell?
-Which user executed the process?
-Which process launched PowerShell?
-What command was executed?
-Was an encoded command used?
-Was the activity expected?
-Which MITRE ATT&CK technique applied?
-Evidence Review
+* Which host executed PowerShell?
+* Which user context was used?
+* What was the parent process?
+* Was an encoded command used?
+* Is the activity expected or malicious?
 
-The investigation was supported by four primary evidence artifacts.
+---
 
-Evidence	File	Purpose
-Attack Execution	01_powershell_attack.png	Demonstrates attack simulation
-Splunk Alert	02_detection_alert.png	Demonstrates alert generation
-Dashboard	03_detection_dashboard.png	Demonstrates visualization
-SPL Result	04_spl_query_result.png	Demonstrates event-level detection
+# Evidence Review
 
-The evidence chain demonstrates:
+Sysmon Process Creation events (Event ID 1) were reviewed to validate the detection.
 
-Attack
-  ↓
-Telemetry
-  ↓
-Detection
-  ↓
-Alert
-  ↓
-Dashboard
-  ↓
-Investigation
-MITRE ATT&CK Mapping
-Tactic	Technique	ID	Relevance
-Execution	Command and Scripting Interpreter: PowerShell	T1059.001	Primary technique
-Execution	Command and Scripting Interpreter	T1059	Parent technique
-Defense Evasion	Obfuscated/Compressed Files and Information	T1027	Supporting indicator for encoded content
-Primary Technique
-T1059.001 — Command and Scripting Interpreter: PowerShell
+Evidence includes:
 
-PowerShell was used as the execution mechanism during the simulated attack.
+* Host: DESKTOP-HCNDFJJ
+* Image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+* Parent: C:\Windows\System32\cmd.exe
+* User: DESKTOP-HCNDFJJ\حذيفه أبو الرجال
+* Encoded Parameter: -e
 
-This is the primary MITRE ATT&CK mapping for the case.
+The raw events confirm PowerShell was spawned by cmd.exe with an encoded command.
 
-Supporting Indicator
+---
 
-The use of -EncodedCommand / -e was treated as an additional suspicious behavior.
+# Incident Report
 
-The encoded command was investigated in conjunction with:
+The complete incident investigation report is available here:
 
-Parent process
-User
-Host
-Process ID
-Command line
-Atomic Red Team execution context
-Incident Classification
-Attribute	Classification
-Incident Type	PowerShell Attack Simulation
-Severity	High
-Priority	P2
-Status	Closed
-Environment	SOC Home Lab
-Detection	Successful
-Alert	Triggered
-Investigation	Completed
-Production Impact	None
-SOC Investigation Findings
+📄 **[incident_report.md](./incident_report.md)**
 
-The investigation confirmed:
+The report includes Executive Summary, Timeline, Detection Logic, MITRE Mapping, Affected Assets, PICERL, and Lessons Learned.
 
-PowerShell was executed on the monitored Windows endpoint.
-cmd.exe was identified as the parent process.
-Sysmon successfully recorded the process creation event.
-Splunk successfully ingested the telemetry.
-The SPL detection successfully identified the activity.
-An encoded PowerShell command was observed.
-The Splunk alert was successfully triggered.
-The activity appeared in the detection dashboard.
-The underlying event was available for analyst investigation.
-Atomic Red Team was responsible for generating the controlled test activity.
-Lessons Learned
+---
 
-This case demonstrated why PowerShell should receive high-priority monitoring within a Windows SOC environment.
+# MITRE ATT&CK Mapping
 
-Process creation telemetry provides important context beyond simply searching for:
+| Tactic | Technique | ID | Relevance |
+| ------ | --------- | -- | --------- |
+| Execution | Command and Scripting Interpreter: PowerShell | T1059.001 | Primary Technique |
+| Defense Evasion | Obfuscated Files or Information | T1027 | Supporting - Encoded Command |
 
-powershell.exe
+---
 
-The most valuable investigation fields were:
+# Project Workflow
 
-Process Image
-Parent Image
-User
-CommandLine
-Process ID
-Host
-Timestamp
-
-The exercise also demonstrated the value of monitoring encoded PowerShell parameters.
-
-Detection Improvements
-
-Future detection iterations can improve visibility by adding:
-
-PowerShell Script Block Logging
-PowerShell Module Logging
-PowerShell Operational Logs
-Sysmon Event ID 1 correlation
-Network connections generated by PowerShell
-External download activity
-Suspicious URLs
-Encoded command analysis
-Parent-child process anomaly detection
-User and host baselining
-
-A stronger correlation model could be:
-
-Encoded PowerShell
-        +
-Suspicious Parent Process
-        +
-External Network Connection
-        +
-Script Execution
-        =
-Higher Confidence Detection
-Incident Report
-
-The complete incident investigation is documented in the incident report.
-
-📄 Open Incident Report
-
-The report contains:
-
-Executive Summary
-Incident Overview
-Attack Timeline
-Detection & Alerting
-MITRE ATT&CK Mapping
-Affected Assets
-Indicators
-Investigation Steps
-Evidence
-Root Cause Analysis
-PICERL
-Recommendations
-Lessons Learned
-Appendices
-Conclusion
-Detection Query
-
-The complete detection query is maintained separately to keep detection engineering artifacts reusable.
-
-📄 Open SPL Detection Query
-
-Attack Documentation
-
-Atomic Red Team test information and attack execution details are documented separately.
-
-📄 Open Atomic Red Team Documentation
-
-Evidence Gallery
-Attack Execution
-
-Splunk Alert
-
-Detection Dashboard
-
-SPL Detection Result
-
-Repository Structure
-03-PowerShell-Attack/
-│
-├── README.md
-│
-├── incident_report.md
-│
-├── attack/
-│   └── atomic_red_team_commands.txt
-│
-├── detection/
-│   └── spl_query.txt
-│
-└── screenshots/
-    ├── 01_powershell_attack.png
-    ├── 02_detection_alert.png
-    ├── 03_detection_dashboard.png
-    └── 04_spl_query_result.png
-Complete SOC Workflow
-
-The complete workflow demonstrated in this case was:
-
-┌─────────────────────────┐
-│     Atomic Red Team     │
-│    Attack Simulation    │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│   PowerShell Execution  │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│      Sysmon Event       │
-│   Process Creation      │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│    Splunk Log Ingest    │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│      SPL Detection      │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│     Splunk Alert        │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│   Detection Dashboard   │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│   Analyst Investigation │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│   MITRE ATT&CK Mapping  │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│    Incident Report      │
-└─────────────────────────┘
-Skills Demonstrated
-
-This case demonstrates practical SOC L1 capabilities including:
-
-Splunk Enterprise
-SPL Query Development
-Detection Engineering
+```text
 Atomic Red Team
-MITRE ATT&CK
-Sysmon Analysis
-Windows Event Analysis
-PowerShell Threat Detection
-Process Tree Analysis
-Command-Line Analysis
-Encoded PowerShell Detection
-Alert Engineering
-Dashboard Development
-SOC Investigation
-Threat Hunting
-Security Event Correlation
-Incident Documentation
-Conclusion
+      │
+      ▼
+PowerShell Execution
+      │
+      ▼
+Sysmon Event (Process Creation)
+      │
+      ▼
+Splunk Ingestion
+      │
+      ▼
+SPL Detection Rule
+      │
+      ▼
+Splunk Alert
+      │
+      ▼
+Detection Dashboard
+      │
+      ▼
+Analyst Investigation
+      │
+      ▼
+MITRE ATT&CK Mapping
+      │
+      ▼
+Incident Report
+```
 
-The PowerShell attack simulation was successfully executed using Atomic Red Team and detected by Splunk Enterprise through Sysmon process creation telemetry.
 
-The exercise validated the complete SOC workflow:
 
-Attack Simulation → Telemetry → Detection → Alert → Dashboard → Investigation → MITRE Mapping → Incident Documentation
+---
 
-The case demonstrates that endpoint process telemetry combined with command-line analysis can provide effective visibility into suspicious PowerShell execution.
+# Skills Demonstrated
 
-The lab is now positioned for future detection improvements involving:
-
-PowerShell Script Block Logging
-Encoded command analysis
-Suspicious download cradles
-Network correlation
-Process-tree analytics
-Post-exploitation behavior
-Automated response
-
-Case Status: Successfully Detected and Investigated
-Primary MITRE Technique: T1059.001
-Environment: Controlled SOC Home Lab
-Production Impact: None
+* Splunk Enterprise
+* SPL Query Development
+* Detection Engineering
+* Atomic Red Team
+* Sysmon Analysis
+* Windows Event Analysis
+* PowerShell Threat Detection
+* Process Tree Analysis
+* Command-Line Analysis
+* Encoded PowerShell Detection
+* Alert Engineering
+* Dashboard Development
+* SOC Investigation Workflow
+* MITRE ATT&CK Mapping
+* Incident Response Documentation

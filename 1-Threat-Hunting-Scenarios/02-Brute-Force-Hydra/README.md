@@ -35,7 +35,7 @@ Attack commands are available here:
 
 Hydra Execution
 
-![Hydra Execution](screenshots/hydra_execution.png)
+![Hydra Execution](./evidence/screenshots/hydra_execution.png)
 
 ---
 
@@ -55,7 +55,7 @@ The SPL search successfully identified the brute force activity generated during
 
 Detection Search
 
-![Detection Search](screenshots/spl_search.png)
+![Detection Search](./evidence/screenshots/spl_search.png)
 
 ---
 
@@ -65,7 +65,7 @@ A scheduled Splunk alert was configured to automatically detect brute force beha
 
 Alert Triggered
 
-![Alert Triggered](screenshots/alert_triggered.png)
+![Alert Triggered](./evidence/screenshots/alert_triggered.png)
 
 ---
 
@@ -75,7 +75,7 @@ When the alert conditions were met, Splunk automatically sent an email notificat
 
 Email Notification
 
-![Email Notification](screenshots/email_notification.png)
+![Email Notification](./evidence/screenshots/email_notification.png)
 
 ---
 
@@ -95,7 +95,7 @@ Dashboard capabilities include:
 
 Dashboard Preview
 
-![Detection Dashboard](screenshots/detection_dashboard.png)
+![Detection Dashboard](./evidence/screenshots/detection_dashboard.png)
 
 ---
 
@@ -105,7 +105,7 @@ Selecting a suspicious Source IP from the Detection Dashboard automatically open
 
 Drilldown Workflow
 
-![Drilldown Workflow](screenshots/drilldown_workflow.png)
+![Drilldown Workflow](./evidence/screenshots/drilldown_workflow.png)
 
 ---
 
@@ -126,7 +126,7 @@ Features include:
 
 Investigation Preview
 
-![Investigation Dashboard](screenshots/investigation_dashboard.png)
+![Investigation Dashboard](./evidence/screenshots/investigation_dashboard.png)
 
 ---
 
@@ -136,7 +136,7 @@ Raw Apache Access Log events were reviewed to validate the detection and confirm
 
 Raw Events
 
-![Raw Events](screenshots/raw_events.png)
+![Raw Events](./evidence/screenshots/raw_events.png)
 
 ---
 

@@ -30,7 +30,7 @@ Attack commands are available here:
 
 ### Attack Evidence
 
-![Nmap Execution](./screenshots/nmap_execution.png)
+![Nmap Execution](./evidence/screenshots/nmap_execution.png)
 
 ---
 
@@ -44,7 +44,7 @@ Detection rule:
 
 ### Detection Search Result
 
-![Detection Search](./screenshots/spl_search.png)
+![Detection Search](./evidence/screenshots/spl_search.png)
 
 ---
 
@@ -62,7 +62,7 @@ Dashboard capabilities include:
 
 ### Dashboard Preview
 
-![Detection Dashboard](./screenshots/detection_dashboard.png)
+![Detection Dashboard](./evidence/screenshots/detection_dashboard.png)
 
 ---
 
@@ -72,7 +72,7 @@ Selecting a suspicious Source IP automatically opens the investigation dashboard
 
 ### Drilldown Workflow
 
-![Drilldown](./screenshots/drilldown_workflow.png)
+![Drilldown](./evidence/screenshots/drilldown_workflow.png)
 
 ---
 
@@ -88,7 +88,7 @@ The investigation dashboard enables detailed event analysis by providing:
 
 ### Investigation Preview
 
-![Investigation Dashboard](./screenshots/investigation_dashboard.png)
+![Investigation Dashboard](./evidence/screenshots/investigation_dashboard.png)
 
 ---
 
@@ -98,7 +98,7 @@ Raw Windows Security Events were reviewed to validate the detection and confirm 
 
 ### Raw Events
 
-![Raw Events](./screenshots/raw_events.png)
+![Raw Events](./evidence/screenshots/raw_events.png)
 
 ---
 

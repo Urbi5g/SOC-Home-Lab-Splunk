@@ -213,7 +213,7 @@ The following evidence was collected during the investigation:
 
 The Hydra execution output demonstrates that the brute force simulation was actively performed against the DVWA authentication endpoint.
 
-![Hydra Brute Force Execution](screenshots/hydra_execution.png)
+![Hydra Brute Force Execution](./evidence/screenshots/hydra_execution.png)
 
 **Evidence:** Hydra command execution and automated authentication attempts.
 
@@ -221,7 +221,7 @@ The Hydra execution output demonstrates that the brute force simulation was acti
 
 The Splunk evidence demonstrates the detection of the abnormal authentication activity and supports the investigation workflow.
 
-![Splunk Brute Force Detection](screenshots/investigation_dashboard.png)
+![Splunk Brute Force Detection](./evidence/screenshots/investigation_dashboard.png)
 
 **Evidence:** Detection search results, alert activity and investigation workflow in Splunk.
 
