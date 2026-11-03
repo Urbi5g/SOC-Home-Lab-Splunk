@@ -2,79 +2,91 @@
 
 ## 1. Overview
 
-OPNsense provides firewalling and network security capabilities for the SOC home lab. It separates the lab network from the external network and supports traffic filtering, network troubleshooting, and security monitoring.
+This document describes the core configuration of the OPNsense firewall deployed in the SOC Home Lab.
 
-## 2. Lab Network Configuration
+OPNsense serves as the central network security gateway, providing network segmentation, IP addressing services, and firewall capabilities for the lab environment.
 
-| Component | Documented Value |
-|---|---|
-| Firewall Platform | OPNsense |
-| Version | 26.7 |
-| LAN Interface Address | `192.168.50.1/24` |
-| WAN Address | `192.168.190.139` |
-| WAN Network | VMware NAT network |
-| LAN Network | `192.168.50.0/24` |
-| Windows Domain Controller | `192.168.50.10` |
-| Splunk Server | `192.168.50.2` |
-| Syslog Destination Port | UDP `514` |
-| IDS/IPS Platform | Suricata 8.0.6 |
+The firewall separates the internal lab network from the VMware NAT-connected network.
 
-Verify current interface addresses in OPNsense before relying on them, as VMware DHCP or network changes may alter the WAN address.
+## 2. System Information
 
-## 3. Network Roles
+OPNsense is deployed as a virtual machine running on VMware Workstation.
 
-### WAN
+The following screenshot documents the firewall system information and installed software version.
 
-The WAN interface connects the firewall to the VMware NAT network, providing external connectivity when the host and virtual network permit it.
+![OPNsense System Information](../evidence/screenshots/10-opnsense-system-information.png)
 
-### LAN
+## 3. Network Interface Configuration
 
-The LAN interface connects lab machines to the internal network `192.168.50.0/24`.
+The OPNsense virtual machine uses two network interfaces connected to separate VMware virtual networks.
 
-### DHCP and DNS
+| Interface | Device | IPv4 Configuration | IP Address | VMware Network |
+|---|---|---|---|---|
+| WAN | em0 | DHCP | 192.168.190.139 | VMnet8 (NAT) |
+| LAN | em1 | Static | 192.168.50.1/24 | VMnet1 (Host-only) |
 
-The lab uses OPNsense for DHCP according to the documented setup. The Windows Server also provides Active Directory DNS services for the `soclab.local` domain.
+### 3.1 WAN Interface
 
-Domain-joined Windows clients should use the Active Directory DNS server for domain name resolution. Configure external name resolution through the intended DNS forwarding or recursive-resolution design.
+- Connected to VMware VMnet8.
+- Configured as a DHCP client.
+- Obtains its IPv4 configuration from the VMware NAT network.
+- Uses the VMware NAT gateway at `192.168.190.2`.
 
-## 4. Firewall and Monitoring Components
+### 3.2 LAN Interface
 
-### Firewall Rules
+- Connected to VMware VMnet1.
+- Configured with the static IPv4 address `192.168.50.1/24`.
+- Acts as the default gateway for internal lab systems.
+- Provides network connectivity to internal lab endpoints.
 
-Review firewall rules for:
+The following screenshot documents the OPNsense interface configuration.
 
-- Necessary connectivity between lab systems.
-- DNS and domain-controller communication.
-- Splunk event-forwarding traffic.
-- Restricted access to management interfaces.
-- Unnecessary inbound access from external networks.
+![OPNsense Interface Overview](../evidence/screenshots/02-opnsense-interface-overview.png)
 
-Document the actual enabled rules rather than assuming default or recommended rules are present.
+## 4. DHCP Configuration
 
-### Suricata
+OPNsense provides DHCP services for the internal LAN network, allowing connected lab systems to obtain their IP configuration automatically.
 
-Suricata is the lab's network intrusion detection and prevention component.
+### 4.1 WAN DHCP
 
-Depending on its configured mode and enabled rulesets, it can generate alerts for suspicious network traffic. Validate whether it is operating in IDS or IPS mode and whether the relevant interfaces are selected for inspection.
+The WAN interface operates as a DHCP client and receives its IP configuration from the VMware NAT network.
 
-## 5. Validation Checklist
+### 4.2 LAN DHCP Server
 
-- [ ] Confirm the LAN and WAN addresses in the OPNsense interface.
-- [ ] Confirm the active DHCP configuration.
-- [ ] Verify DNS resolution from a lab endpoint.
-- [ ] Review enabled firewall rules.
-- [ ] Confirm Suricata service status, operating mode, and monitored interfaces.
-- [ ] Confirm that firewall logs are generated.
-- [ ] Confirm log forwarding to Splunk.
+The DHCP server is enabled on the LAN interface.
 
-## 6. Evidence
+It dynamically assigns IP addresses to devices connected to the internal lab network, reducing the need to configure each endpoint manually.
 
-Suggested screenshots:
+The LAN interface uses the `192.168.50.0/24` subnet.
 
-- Interface overview.
-- LAN and WAN configuration.
-- DHCP configuration.
-- Firewall rules relevant to the lab.
-- Suricata configuration and alert view.
+The following screenshot documents the LAN DHCP configuration.
 
-**Status:** Configuration values are documented from the lab notes; verify current settings before marking all checks complete.
+![OPNsense LAN DHCP Configuration](../evidence/screenshots/11-opnsense-dhcp-configuration.png)
+
+## 5. Network Design Summary
+
+The lab network is divided into two virtual network segments:
+
+| Network | Purpose | Subnet | DHCP Role |
+|---|---|---|---|
+| VMnet8 | WAN connectivity through VMware NAT | 192.168.190.0/24 | VMware DHCP provides the WAN address |
+| VMnet1 | Internal SOC lab network | 192.168.50.0/24 | OPNsense DHCP server assigns endpoint addresses |
+
+OPNsense connects these two network segments through its WAN and LAN interfaces.
+
+This architecture provides a dedicated internal network for lab systems while maintaining a separate WAN-facing network.
+
+## 6. Configuration Scope
+
+This document covers the following OPNsense configuration areas:
+
+- System information and software version.
+- WAN and LAN interface configuration.
+- WAN DHCP client configuration.
+- LAN DHCP server configuration.
+- VMware virtual network integration.
+
+Firewall access policies and remote logging configuration are documented separately:
+
+- `firewall-rules.md`
+- `syslog-forwarding.md`
